@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
+        header { background-color: #131921; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .logo { font-size: 1.5rem; font-weight: bold; color: #ff9900; display: flex; align-items: center; gap: 0.5rem; }
+        .cart-icon-btn { background: #232f3e; color: white; border: 1px solid #3a4553; padding: 0.6rem 1.2rem; border-radius: 20px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .cart-count { background-color: #ff9900; color: #131921; font-weight: bold; border-radius: 50%; padding: 0.1rem 0.5rem; font-size: 0.85rem; }
+        .container { display: flex; flex: 1; gap: 2rem; padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .products-section { flex: 3; }
+        .section-title { margin-bottom: 1.5rem; font-size: 1.4rem; color: #111; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+        .product-card { background: white; border-radius: 8px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+        .product-image { height: 160px; width: 100%; object-fit: contain; margin-bottom: 1rem; }
+        .product-category { font-size: 0.75rem; color: #777; text-transform: uppercase; letter-spacing: 0.5px; }
+        .product-title { font-size: 1rem; font-weight: 600; margin: 0.3rem 0; color: #222; }
+        .product-price { font-size: 1.2rem; font-weight: bold; color: #b12704; margin-bottom: 1rem; }
+        .add-to-cart-btn { background-color: #ffd814; border: 1px solid #fcd200; border-radius: 20px; padding: 0.6rem; cursor: pointer; font-weight: 600; width: 100%; }
+        .add-to-cart-btn:hover { background-color: #f7ca00; }
+        .cart-sidebar { flex: 1; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); height: fit-content; max-height: calc(100vh - 120px); display: flex; flex-direction: column; position: sticky; top: 90px; }
+        .cart-items { overflow-y: auto; max-height: 400px; margin: 1rem 0; padding-right: 0.3rem; }
+        .cart-item { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid #eee; }
+        .cart-item-info { flex: 1; padding-right: 0.5rem; }
+        .cart-item-title { font-size: 0.9rem; font-weight: 600; }
+        .cart-item-price { font-size: 0.85rem; color: #555; }
+        .cart-controls { display: flex; align-items: center; gap: 0.4rem; }
+        .qty-btn { background-color: #e7e9ec; border: 1px solid #adb1b8; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-weight: bold; }
+        .remove-btn { color: #cc0000; background: none; border: none; cursor: pointer; margin-left: 0.5rem; font-size: 0.9rem; }
+        .empty-cart-msg { color: #777; text-align: center; padding: 2rem 0; }
+        .cart-summary { border-top: 2px solid #eee; padding-top: 1rem; }
+        .total-price-row { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; }
+        .checkout-btn { width: 100%; background-color: #ffa41c; border: 1px solid #ff8f00; border-radius: 20px; padding: 0.75rem; font-weight: bold; cursor: pointer; }
+        .checkout-btn:disabled { background-color: #e7e9ec; border-color: #adb1b8; cursor: not-allowed; color: #888; }
+        @media (max-width: 900px) { .container { flex-direction: column; } .cart-sidebar { position: static; max-height: none; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo"><i class="fa-solid fa-store"></i> ShopEasy</div>
+        <button class="cart-icon-btn" onclick="document.getElementById('cart-section').scrollIntoView({ behavior: 'smooth' });">
+            <i class="fa-solid fa-cart-shopping"></i> Cart
+            <span class="cart-count" id="cart-count">0</span>
+        </button>
+    </header>
+
+    <div class="container">
+        <section class="products-section">
+            <h2 class="section-title">Explore Products</h2>
+            <div class="product-grid" id="product-grid"></div>
+        </section>
+
+        <aside class="cart-sidebar" id="cart-section">
+            <h2 class="section-title">Your Cart</h2>
+            <div class="cart-items" id="cart-items">
+                <p class="empty-cart-msg">Your cart is empty</p>
+            </div>
+            <div class="cart-summary">
+                <div class="total-price-row">
+                    <span>Total:</span>
+                    <span id="cart-total">₹0.00</span>
+                </div>
+                <button class="checkout-btn" id="checkout-btn" disabled onclick="checkout()">Proceed to Checkout</button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let products = [];
+        let cart = [];
+
+        async function fetchProductsFromDatabase() {
+            try {
+                const response = await fetch('/api/products');
+                products = await response.json();
+                renderProducts();
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById("product-grid");
+            grid.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <div>
+                        <img src="${product.image}" alt="${product.title}" class="product-image">
+                        <span class="product-category">${product.category}</span>
+                        <h3 class="product-title">${product.title}</h3>
+                        <p style="font-size: 0.85rem; color: #2e7d32; font-weight: 600; margin-bottom: 0.5rem;">
+                            In Stock: ${product.stock != null ? product.stock : 'N/A'} available
+                        </p>
+                    </div>
+                    <div>
+                        <div class="product-price">₹${product.price.toFixed(2)}</div>
+                        <button class="add-to-cart-btn" onclick="addToCart(${product.id})">
+                            <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function addToCart(productId) {
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                const product = products.find(p => p.id === productId);
+                cart.push({ ...product, quantity: 1 });
+            }
+            updateCartUI();
+        }
+
+        function changeQuantity(productId, delta) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                    return;
+                }
+            }
+            updateCartUI();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById("cart-items");
+            const cartCountElement = document.getElementById("cart-count");
+            const cartTotalElement = document.getElementById("cart-total");
+            const checkoutBtn = document.getElementById("checkout-btn");
+
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountElement.textContent = totalCount;
+
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            cartTotalElement.textContent = `₹${totalPrice.toFixed(2)}`;
+
+            checkoutBtn.disabled = cart.length === 0;
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `<p class="empty-cart-msg">Your cart is empty</p>`;
+            } else {
+                cartItemsContainer.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <div class="cart-item-title">${item.title}</div>
+                            <div class="cart-item-price">₹${(item.price * item.quantity).toFixed(2)}</div>
+                        </div>
+                        <div class="cart-controls">
+                            <button class="qty-btn" onclick="changeQuantity(${item.id}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="qty-btn" onclick="changeQuantity(${item.id}, 1)">+</button>
+                            <button class="remove-btn" onclick="removeFromCart(${item.id})">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join("");
+            }
+        }
+
+        async function checkout() {
+            if (cart.length === 0) return;
+
+            // Prepare payload matching CartItemDTO
+            const payload = cart.map(item => ({
+                productId: item.id,
+                quantity: item.quantity
+            }));
+
+            try {
+                const response = await fetch('/api/products/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("Order placed successfully! Stock updated in database.");
+                    cart = [];
+                    updateCartUI();
+                    // Refresh product grid to show updated stock counts from SQLite
+                    fetchProductsFromDatabase();
+                } else {
+                    alert("Failed to process order.");
+                }
+            } catch (error) {
+                console.error("Error during checkout:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchProductsFromDatabase);
+    </script>
+</body>
+</html>
