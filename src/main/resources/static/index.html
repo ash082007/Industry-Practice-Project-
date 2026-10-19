@@ -38,17 +38,51 @@
         .total-price-row { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; }
         .checkout-btn { width: 100%; background-color: #ffa41c; border: 1px solid #ff8f00; border-radius: 20px; padding: 0.75rem; font-weight: bold; cursor: pointer; }
         .checkout-btn:disabled { background-color: #e7e9ec; border-color: #adb1b8; cursor: not-allowed; color: #888; }
+        
+        /* Login Overlay */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(19, 25, 33, 0.95); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 8px; width: 100%; max-width: 380px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .login-card h2 { margin-bottom: 1.5rem; color: #131921; text-align: center; }
+        .input-group { margin-bottom: 1.2rem; }
+        .input-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.9rem; }
+        .input-group input { width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        .login-btn { width: 100%; background-color: #ff9900; color: white; border: none; padding: 0.75rem; border-radius: 4px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 0.5rem; }
+        .login-btn:hover { background-color: #e68a00; }
+        .login-error { color: #cc0000; font-size: 0.85rem; margin-top: 0.8rem; text-align: center; display: none; }
+
         @media (max-width: 900px) { .container { flex-direction: column; } .cart-sidebar { position: static; max-height: none; } }
     </style>
 </head>
 <body>
 
+    <!-- Login Overlay -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2><i class="fa-solid fa-lock"></i> Login</h2>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required placeholder="Enter username">
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="login-btn">Sign In</button>
+                <div id="login-error" class="login-error">Invalid username or password</div>
+            </form>
+        </div>
+    </div>
+
     <header>
         <div class="logo"><i class="fa-solid fa-store"></i> ShopEasy</div>
-        <button class="cart-icon-btn" onclick="document.getElementById('cart-section').scrollIntoView({ behavior: 'smooth' });">
-            <i class="fa-solid fa-cart-shopping"></i> Cart
-            <span class="cart-count" id="cart-count">0</span>
-        </button>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <span id="user-display" style="font-size: 0.9rem;"></span>
+            <button class="cart-icon-btn" onclick="document.getElementById('cart-section').scrollIntoView({ behavior: 'smooth' });">
+                <i class="fa-solid fa-cart-shopping"></i> Cart
+                <span class="cart-count" id="cart-count">0</span>
+            </button>
+        </div>
     </header>
 
     <div class="container">
@@ -75,6 +109,33 @@
     <script>
         let products = [];
         let cart = [];
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById("username").value;
+            const passwordInput = document.getElementById("password").value;
+            const errorDiv = document.getElementById("login-error");
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById("login-overlay").style.display = "none";
+                    document.getElementById("user-display").textContent = `Welcome, ${data.username}!`;
+                    fetchProductsFromDatabase();
+                } else {
+                    errorDiv.style.display = "block";
+                }
+            } catch (error) {
+                console.error("Login failed:", error);
+                errorDiv.style.display = "block";
+            }
+        }
 
         async function fetchProductsFromDatabase() {
             try {
@@ -175,7 +236,6 @@
         async function checkout() {
             if (cart.length === 0) return;
 
-            // Prepare payload matching CartItemDTO
             const payload = cart.map(item => ({
                 productId: item.id,
                 quantity: item.quantity
@@ -192,7 +252,6 @@
                     alert("Order placed successfully! Stock updated in database.");
                     cart = [];
                     updateCartUI();
-                    // Refresh product grid to show updated stock counts from SQLite
                     fetchProductsFromDatabase();
                 } else {
                     alert("Failed to process order.");
@@ -201,8 +260,6 @@
                 console.error("Error during checkout:", error);
             }
         }
-
-        document.addEventListener("DOMContentLoaded", fetchProductsFromDatabase);
     </script>
 </body>
 </html>
